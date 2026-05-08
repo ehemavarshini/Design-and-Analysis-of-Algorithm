@@ -1,0 +1,104 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <queue>
+
+using namespace std;
+
+struct Item {
+    float weight;
+    int value;
+};
+
+struct Node {
+    int level, profit;
+    float weight;
+    double bound;
+};
+
+bool cmp(Item a, Item b) {
+    return (double)a.value / a.weight > (double)b.value / b.weight;
+}
+
+struct compareNodes {
+    bool operator()(Node const& n1, Node const& n2) {
+        return n1.bound < n2.bound;
+    }
+};
+
+double get_bound(Node u, int n, int W, vector<Item>& arr) {
+    if (u.weight >= W) return 0;
+    double profit_bound = u.profit;
+    int j = u.level + 1;
+    float totweight = u.weight;
+
+    while ((j < n) && (totweight + arr[j].weight <= W)) {
+        totweight += arr[j].weight;
+        profit_bound += arr[j].value;
+        j++;
+    }
+
+    if (j < n)
+        profit_bound += (W - totweight) * (double)arr[j].value / arr[j].weight;
+
+    return profit_bound;
+}
+
+int knapsack(int W, vector<Item>& arr, int n) {
+    sort(arr.begin(), arr.end(), cmp);
+    priority_queue<Node, vector<Node>, compareNodes> pq;
+    Node u, v;
+
+    u.level = -1;
+    u.profit = 0;
+    u.weight = 0;
+    u.bound = get_bound(u, n, W, arr);
+    pq.push(u);
+
+    int maxProfit = 0;
+
+    while (!pq.empty()) {
+        u = pq.top();
+        pq.pop();
+
+        if (u.bound > maxProfit) {
+            v.level = u.level + 1;
+
+            v.weight = u.weight + arr[v.level].weight;
+            v.profit = u.profit + arr[v.level].value;
+
+            if (v.weight <= W && v.profit > maxProfit)
+                maxProfit = v.profit;
+
+            v.bound = get_bound(v, n, W, arr);
+            if (v.bound > maxProfit)
+                pq.push(v);
+
+            v.weight = u.weight;
+            v.profit = u.profit;
+            v.bound = get_bound(v, n, W, arr);
+            if (v.bound > maxProfit)
+                pq.push(v);
+        }
+    }
+    return maxProfit;
+}
+
+int main() {
+    int n, W;
+
+    cout << "Enter number of items: ";
+    cin >> n;
+    cout << "Enter capacity of knapsack: ";
+    cin >> W;
+
+    vector<Item> arr(n);
+    for (int i = 0; i < n; i++) {
+        cout << "Enter value and weight for item " << i + 1 << ": ";
+        cin >> arr[i].value >> arr[i].weight;
+    }
+
+    cout << "Maximum possible profit = " << knapsack(W, arr, n) << endl;
+
+    return 0;
+}
